@@ -1,0 +1,104 @@
+.booking-form-container {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 30px;
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.booking-form-container h2 {
+  text-align: center;
+  color: #2b2b2b;
+  margin-bottom: 20px;
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+  flex: 1;
+  min-width: 250px;
+}
+
+.form-group label {
+  font-weight: bold;
+  margin-bottom: 6px;
+  color: #333;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  transition: 0.2s border-color ease-in-out;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #004aad;
+  outline: none;
+}
+
+.form-group small {
+  font-size: 12px;
+  color: #777;
+  margin-top: 4px;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.error {
+  color: #d60000;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.submit-button {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  background-color: #004aad;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.25s ease-in-out;
+}
+
+.submit-button:hover {
+  background-color: #003080;
+}
+
+.submit-button:disabled {
+  background-color: #aaa;
+  cursor: not-allowed;
+}
+
+.submit-message {
+  margin-top: 20px;
+  font-size: 15px;
+  text-align: center;
+}
+
+.submit-message.success {
+  color: #1a7f1a;
+}
+
+.submit-message.error {
+  color: #c70000;
+}
