@@ -5,7 +5,7 @@
   background-color: #ffffff;
   border: 1px solid #ddd;
   border-radius: 8px;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Cormorant", serif;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
@@ -101,4 +101,79 @@ textarea {
 
 .submit-message.error {
   color: #c70000;
+}
+
+.service-selector {
+  margin-top: 20px;
+}
+
+.category-button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fafafa;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-family: "Cormorant", serif;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.category-button:hover {
+  background-color: #f0f0f0;
+}
+
+.arrow {
+  font-size: 18px;
+}
+
+.sub-services {
+  padding: 10px 0 0 0;
+}
+
+.service-option {
+  display: flex;
+  align-items: flex-start;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-top: 10px;
+  padding: 12px;
+  cursor: pointer;
+  gap: 12px;
+  background-color: #fff;
+  transition: 0.2s;
+}
+
+.service-option:hover {
+  background-color: #f9f9f9;
+}
+
+.service-option input[type="radio"] {
+  margin-top: 5px;
+}
+
+.service-content {
+  flex: 1;
+}
+
+.service-name {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.service-description {
+  font-size: 14px;
+  color: #555;
+  white-space: pre-wrap;
+}
+
+.service-price {
+  font-weight: 600;
+  color: #222;
+  min-width: 50px;
+  text-align: right;
 }

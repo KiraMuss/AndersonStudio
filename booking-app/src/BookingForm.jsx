@@ -1,32 +1,7 @@
 import React, { useState } from "react";
+import ServiceSelector from "./ServiceSelector";
 import "./BookingForm.css";
 
-// Service groups with sub-services
-const serviceGroups = {
-  "Kasvohoidot ja meikit": [
-    "Juhlameikki",
-    "Päivämeikki",
-    "Ultraäänipuhdistus",
-    "Kasvohoito",
-    "Täydellinen kasvohoito",
-    "Rentouttava kasvohoito",
-  ],
-  "Ripset/kulmat": [
-    "Ripsien värjäys",
-    "Kulmien värjäys ja muotoilu",
-    "Ripsien ja kulmien värjäys ja muotoilu",
-    "Kulmien laminointi",
-    "Kulmien laminointi( organic)",
-  ],
-  Hieronta: [
-    "Klassinen hieronta (30 min)",
-    "Klassinen hieronta (45 min)",
-    "Intialainen päähieronta",
-  ],
-  Jalkahoidot: ["Jalkahoito", "Spa-jalkahoito"],
-};
-
-// Time range validation: 08:00 – 20:15
 const isTimeUnavailable = (dateObj) => {
   if (!(dateObj instanceof Date)) return true;
   const hour = dateObj.getHours();
@@ -42,7 +17,6 @@ const BookingForm = () => {
     sukunimi: "",
     sahkoposti: "",
     puhelin: "",
-    palveluRyhmä: "",
     palvelu: "",
     aika: "",
     lisatiedot: "",
@@ -54,13 +28,7 @@ const BookingForm = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    // Reset palvelu when changing palveluRyhmä
-    if (name === "palveluRyhmä") {
-      setFormData((prev) => ({ ...prev, [name]: value, palvelu: "" }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const validate = () => {
@@ -71,7 +39,6 @@ const BookingForm = () => {
       errs.sahkoposti = "Virheellinen sähköposti";
     if (!/^(?:\+358|0)\d{7,14}$/.test(formData.puhelin))
       errs.puhelin = "Virheellinen puhelinnumero";
-    if (!formData.palveluRyhmä) errs.palveluRyhmä = "Valitse palveluryhmä";
     if (!formData.palvelu) errs.palvelu = "Valitse palvelu";
     if (!formData.aika) {
       errs.aika = "Valitse päivä ja aika";
@@ -86,58 +53,36 @@ const BookingForm = () => {
     return errs;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
     setErrors(errs);
-    if (Object.keys(errs).length) return;
+    if (Object.keys(errs).length > 0) return;
 
-    console.log("Form data:", formData);
-    setSubmitMessage("🧪 (DEMO) Varauksen tiedot tulostettu konsoliin.");
+    setIsSubmitting(true);
+    setSubmitMessage("");
 
-    // Сброс формы
-    setFormData({
-      etunimi: "",
-      sukunimi: "",
-      sahkoposti: "",
-      puhelin: "",
-      palveluRyhmä: "",
-      palvelu: "",
-      aika: "",
-      lisatiedot: "",
-    });
+    const backendUrl = "https://anderson-studio.org/api/booking"; // или временно убери axios
+
+    try {
+      await axios.post(backendUrl, formData);
+      setSubmitMessage("Kiitos! Varauksesi on lähetetty onnistuneesti.");
+      setFormData({
+        etunimi: "",
+        sukunimi: "",
+        sahkoposti: "",
+        puhelin: "",
+        palvelu: "",
+        aika: "",
+        lisatiedot: "",
+      });
+    } catch (error) {
+      console.error(error);
+      setSubmitMessage("Tapahtui virhe. Yritä uudelleen.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-
-  //   const handleSubmit = async (e) => {
-  //     e.preventDefault();
-  //     const errs = validate();
-  //     setErrors(errs);
-  //     if (Object.keys(errs).length) return;
-
-  //     setIsSubmitting(true);
-  //     setSubmitMessage("");
-  //     const backendUrl = "https://anderson-studio.org/api/booking";
-
-  //     try {
-  //       await axios.post(backendUrl, formData);
-  //       setSubmitMessage("Kiitos! Varauksesi on lähetetty onnistuneesti.");
-  //       setFormData({
-  //         etunimi: "",
-  //         sukunimi: "",
-  //         sahkoposti: "",
-  //         puhelin: "",
-  //         palveluRyhmä: "",
-  //         palvelu: "",
-  //         aika: "",
-  //         lisatiedot: "",
-  //       });
-  //     } catch (error) {
-  //       console.error(error);
-  //       setSubmitMessage("Tapahtui virhe. Yritä uudelleen.");
-  //     } finally {
-  //       setIsSubmitting(false);
-  //     }
-  //   };
 
   return (
     <div className="booking-form-container">
@@ -201,50 +146,15 @@ const BookingForm = () => {
         </div>
 
         <div className="form-group">
-          <label htmlFor="palveluRyhmä">Palveluryhmä *</label>
-          <select
-            id="palveluRyhmä"
-            name="palveluRyhmä"
-            value={formData.palveluRyhmä}
-            onChange={handleChange}
-            required
-          >
-            <option value="" disabled>
-              -- Valitse ryhmä --
-            </option>
-            {Object.keys(serviceGroups).map((group) => (
-              <option key={group} value={group}>
-                {group}
-              </option>
-            ))}
-          </select>
-          {errors.palveluRyhmä && (
-            <span className="error">{errors.palveluRyhmä}</span>
-          )}
+          <label>Valitse palvelu *</label>
+          <ServiceSelector
+            selectedService={formData.palvelu}
+            onSelect={(value) =>
+              setFormData((prev) => ({ ...prev, palvelu: value }))
+            }
+          />
+          {errors.palvelu && <span className="error">{errors.palvelu}</span>}
         </div>
-
-        {formData.palveluRyhmä && (
-          <div className="form-group">
-            <label htmlFor="palvelu">Palvelu *</label>
-            <select
-              id="palvelu"
-              name="palvelu"
-              value={formData.palvelu}
-              onChange={handleChange}
-              required
-            >
-              <option value="" disabled>
-                -- Valitse palvelu --
-              </option>
-              {serviceGroups[formData.palveluRyhmä].map((service) => (
-                <option key={service} value={service}>
-                  {service}
-                </option>
-              ))}
-            </select>
-            {errors.palvelu && <span className="error">{errors.palvelu}</span>}
-          </div>
-        )}
 
         <div className="form-group">
           <label>Päivämäärä ja aika *</label>
