@@ -102,11 +102,19 @@ const serviceData = {
   ],
 };
 
-const ServiceSelector = ({ selectedService, onSelect }) => {
+const ServiceSelector = ({ selectedServices, onToggle }) => {
   const [expandedCategory, setExpandedCategory] = useState(null);
 
   const handleCategoryToggle = (category) => {
     setExpandedCategory((prev) => (prev === category ? null : category));
+  };
+
+  const handleServiceToggle = (serviceName) => {
+    if (selectedServices.includes(serviceName)) {
+      onToggle(selectedServices.filter((s) => s !== serviceName));
+    } else {
+      onToggle([...selectedServices, serviceName]);
+    }
   };
 
   return (
@@ -128,11 +136,9 @@ const ServiceSelector = ({ selectedService, onSelect }) => {
               {services.map((service) => (
                 <label key={service.name} className="service-option">
                   <input
-                    type="radio"
-                    name="palvelu"
-                    value={service.name}
-                    checked={selectedService === service.name}
-                    onChange={() => onSelect(service.name)}
+                    type="checkbox"
+                    checked={selectedServices.includes(service.name)}
+                    onChange={() => handleServiceToggle(service.name)}
                   />
                   <div className="service-content">
                     <div className="service-name">{service.name}</div>

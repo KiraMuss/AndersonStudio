@@ -1,20 +1,25 @@
+/* --- Контейнер и заголовок --- */
 .booking-form-container {
   max-width: 600px;
-  margin: 40px auto;
+  margin: 30px auto;
   padding: 30px;
-  background-color: #ffffff;
+  background-color: #c9cfc4;
   border: 1px solid #ddd;
   border-radius: 8px;
   font-family: "Cormorant", serif;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.booking-form-container h2 {
+.form-title {
+  font-family: "Aboreto", system-ui;
+  font-weight: 400;
+  font-size: 2em;
   text-align: center;
-  color: #2b2b2b;
+  color: #70abaf;
   margin-bottom: 20px;
 }
 
+/* --- Группы полей --- */
 .form-row {
   display: flex;
   gap: 20px;
@@ -30,7 +35,8 @@
 }
 
 .form-group label {
-  font-weight: bold;
+  font-weight: 500;
+  font-size: 20px;
   margin-bottom: 6px;
   color: #333;
 }
@@ -48,14 +54,8 @@
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-  border-color: #004aad;
+  border-color: #547d5d;
   outline: none;
-}
-
-.form-group small {
-  font-size: 12px;
-  color: #777;
-  margin-top: 4px;
 }
 
 textarea {
@@ -68,11 +68,13 @@ textarea {
   margin-top: 4px;
 }
 
-.submit-button {
+.submit-button,
+.booking-button {
   width: 100%;
   padding: 12px;
+  font-family: "Aboreto", system-ui;
   font-size: 16px;
-  background-color: #004aad;
+  background-color: #547d5d;
   color: #fff;
   border: none;
   border-radius: 4px;
@@ -80,11 +82,13 @@ textarea {
   transition: background-color 0.25s ease-in-out;
 }
 
-.submit-button:hover {
-  background-color: #003080;
+.submit-button:hover,
+.booking-button:hover {
+  background-color: #779585;
 }
 
-.submit-button:disabled {
+.submit-button:disabled,
+.booking-button:disabled {
   background-color: #aaa;
   cursor: not-allowed;
 }
@@ -103,6 +107,7 @@ textarea {
   color: #c70000;
 }
 
+/* --- Выбор услуг --- */
 .service-selector {
   margin-top: 20px;
 }
@@ -110,12 +115,13 @@ textarea {
 .category-button {
   width: 100%;
   display: flex;
+  margin-top: 15px;
   justify-content: space-between;
   align-items: center;
   background: #fafafa;
   border: 1px solid #ccc;
   border-radius: 8px;
-  padding: 14px 16px;
+  padding: 8px 16px;
   font-family: "Cormorant", serif;
   font-size: 16px;
   font-weight: 500;
@@ -128,11 +134,11 @@ textarea {
 }
 
 .arrow {
-  font-size: 18px;
+  font-size: 25px;
 }
 
 .sub-services {
-  padding: 10px 0 0 0;
+  padding-top: 10px;
 }
 
 .service-option {
@@ -152,8 +158,8 @@ textarea {
   background-color: #f9f9f9;
 }
 
-.service-option input[type="radio"] {
-  margin-top: 5px;
+.service-option input[type="checkbox"] {
+  margin-top: 6px;
 }
 
 .service-content {
@@ -176,4 +182,111 @@ textarea {
   color: #222;
   min-width: 50px;
   text-align: right;
+}
+
+/* --- Временные слоты --- */
+.time-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.time-slot {
+  padding: 10px;
+  font-size: 14px;
+  background-color: #e5ecdf;
+  border: 1px solid #999;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.time-slot.selected {
+  background-color: #547d5d;
+  color: white;
+  border-color: #547d5d;
+}
+
+.time-slot.booked {
+  background-color: #ddd;
+  color: #999;
+  cursor: not-allowed;
+}
+
+/* --- ConfirmModal --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.modal {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal h3 {
+  font-size: 22px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.modal-summary {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px;
+}
+
+.modal-summary li {
+  margin-bottom: 10px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.modal-confirm,
+.modal-cancel {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.modal-confirm {
+  background-color: #004aad;
+  color: white;
+}
+
+.modal-cancel {
+  background-color: #ccc;
+  color: black;
+}
+
+.toast-success {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #1a7f1a;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 15px;
+  z-index: 10000;
 }
