@@ -127,7 +127,7 @@ const ServiceSelector = ({ selectedServices, onToggle }) => {
           >
             <span>{category}</span>
             <span className="arrow">
-              {expandedCategory === category ? "˄" : "›"}
+              {expandedCategory === category ? "▾" : "▸"}
             </span>
           </button>
 

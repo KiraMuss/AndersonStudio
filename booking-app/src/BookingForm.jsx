@@ -6,22 +6,22 @@ import "./BookingForm.css";
 
 const today = new Date().toISOString().split("T")[0];
 
-const workingSlots = [
-  // генерируем от 08:00 до 20:15 каждый час
-  "08:00 - 09:00",
-  "09:00 - 10:00",
-  "10:00 - 11:00",
-  "11:00 - 12:00",
-  "12:00 - 13:00",
-  "13:00 - 14:00",
-  "14:00 - 15:00",
-  "15:00 - 16:00",
-  "16:00 - 17:00",
-  "17:00 - 18:00",
-  "18:00 - 19:00",
-  "19:00 - 20:00",
-  "20:00 - 21:00",
-];
+const generateTimeSlots = () => {
+  const slots = [];
+  const start = 8 * 60; // 08:00
+  const end = 20 * 60 + 15; // 20:15
+
+  for (let minutes = start; minutes + 30 <= end; minutes += 30) {
+    const h1 = String(Math.floor(minutes / 60)).padStart(2, "0");
+    const m1 = String(minutes % 60).padStart(2, "0");
+    const h2 = String(Math.floor((minutes + 30) / 60)).padStart(2, "0");
+    const m2 = String((minutes + 30) % 60).padStart(2, "0");
+    slots.push(`${h1}:${m1} - ${h2}:${m2}`);
+  }
+  return slots;
+};
+
+const workingHours = generateTimeSlots();
 
 function BookingForm() {
   const [form, setForm] = useState({
@@ -34,7 +34,7 @@ function BookingForm() {
   });
   const [errors, setErrors] = useState({});
   const [availableTimes, setAvailableTimes] = useState(
-    workingSlots.map((t) => ({ time: t, isBooked: false }))
+    workingHours.map((t) => ({ time: t, isBooked: false }))
   );
   const [showModal, setShowModal] = useState(false);
   const [showThanks, setShowThanks] = useState(false);
@@ -171,7 +171,7 @@ function BookingForm() {
             />
             {errors.email && <p className="booking-error">{errors.email}</p>}
           </div>
-          <div className="form-group">
+          <div className="form-group-service">
             <label>Valitse palvelut *</label>
             <ServiceSelector
               selectedServices={form.services}
@@ -212,7 +212,7 @@ function BookingForm() {
           <button className="booking-button" type="submit">
             Vahvista varaus
           </button>
-          {errors.general && <p className="booking-error">{errors.general}</p>}
+          {/* {errors.general && <p className="booking-error">{errors.general}</p>} */}
         </form>
 
         {showModal && (
