@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-// import axios from "axios";
+import axios from "axios";
 import ConfirmModal from "./ConfirmModal";
 import ServiceSelector from "./ServiceSelector";
 import "./BookingForm.css";
@@ -8,8 +8,8 @@ const today = new Date().toISOString().split("T")[0];
 
 const generateTimeSlots = () => {
   const slots = [];
-  const start = 8 * 60; // 08:00
-  const end = 20 * 60 + 15; // 20:15
+  const start = 8 * 60;
+  const end = 20 * 60 + 15;
 
   for (let minutes = start; minutes + 30 <= end; minutes += 30) {
     const h1 = String(Math.floor(minutes / 60)).padStart(2, "0");
@@ -32,10 +32,12 @@ function BookingForm() {
     time: "",
     services: [],
   });
+
   const [errors, setErrors] = useState({});
   const [availableTimes, setAvailableTimes] = useState(
     workingHours.map((t) => ({ time: t, isBooked: false }))
   );
+
   const [showModal, setShowModal] = useState(false);
   const [showThanks, setShowThanks] = useState(false);
 
@@ -55,8 +57,10 @@ function BookingForm() {
     ];
     return valid && !test.includes(cleaned);
   };
+
   const validateName = (name) =>
     name.length >= 3 && /^[\p{L}\p{N} ]+$/u.test(name);
+
   const isPast = (dateStr, slot) => {
     const [start] = slot.split(" - ");
     const [h, m] = start.split(":").map(Number);
@@ -67,9 +71,29 @@ function BookingForm() {
     return new Date(Y, M - 1, D, h, m) < now;
   };
 
+  // loading all occupied slots  from WordPress REST API
   useEffect(() => {
-    // здесь можно запросить занятие слотов через WP REST API
-    // fetch(`/wp-json/booking/v1/booked?date=${form.date}`)...
+    if (!window?.wpApiSettings?.root) return;
+
+    axios
+      .get(`${window.wpApiSettings.root}booking/v1/booked`, {
+        params: { date: form.date },
+        headers: {
+          "X-WP-Nonce": window.wpApiSettings.nonce,
+        },
+      })
+      .then((res) => {
+        const bookedTimes = res.data || [];
+        setAvailableTimes(
+          workingHours.map((t) => ({
+            time: t,
+            isBooked: bookedTimes.includes(t),
+          }))
+        );
+      })
+      .catch((err) => {
+        console.error("Error fetching booked slots:", err);
+      });
   }, [form.date]);
 
   const handleChange = (e) => {
@@ -80,10 +104,13 @@ function BookingForm() {
       time: name === "date" ? "" : prev.time,
     }));
   };
+
   const handleTimeSelect = (slot) => {
-    if (!slot.isBooked && !isPast(form.date, slot.time))
+    if (!slot.isBooked && !isPast(form.date, slot.time)) {
       setForm((prev) => ({ ...prev, time: slot.time }));
+    }
   };
+
   const handleServicesToggle = (selected) =>
     setForm((prev) => ({ ...prev, services: selected }));
 
@@ -109,7 +136,11 @@ function BookingForm() {
 
   const handleSubmit = () => {
     axios
-      .post("/wp-json/booking/v1/submit", form)
+      .post(`${window.wpApiSettings.root}booking/v1/submit`, form, {
+        headers: {
+          "X-WP-Nonce": window.wpApiSettings.nonce,
+        },
+      })
       .then((res) => {
         if (res.data.success) {
           setShowThanks(true);
@@ -125,7 +156,9 @@ function BookingForm() {
           setTimeout(() => setShowThanks(false), 3000);
         }
       })
-      .catch(console.error);
+      .catch((error) => {
+        console.error("Submission error:", error);
+      });
   };
 
   return (
@@ -149,6 +182,7 @@ function BookingForm() {
             />
             {errors.name && <p className="booking-error">{errors.name}</p>}
           </div>
+
           <div className="form-group">
             <label htmlFor="puhelin">Puhelinnumero *</label>
             <input
@@ -160,6 +194,7 @@ function BookingForm() {
             />
             {errors.phone && <p className="booking-error">{errors.phone}</p>}
           </div>
+
           <div className="form-group">
             <label htmlFor="sahkoposti">Sähköposti *</label>
             <input
@@ -171,6 +206,7 @@ function BookingForm() {
             />
             {errors.email && <p className="booking-error">{errors.email}</p>}
           </div>
+
           <div className="form-group-service">
             <label>Valitse palvelut *</label>
             <ServiceSelector
@@ -212,7 +248,6 @@ function BookingForm() {
           <button className="booking-button" type="submit">
             Vahvista varaus
           </button>
-          {/* {errors.general && <p className="booking-error">{errors.general}</p>} */}
         </form>
 
         {showModal && (

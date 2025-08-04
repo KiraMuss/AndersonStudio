@@ -1,109 +1,35 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import "./BookingForm.css";
-
-const serviceData = {
-  "Kasvohoidot ja meikit": [
-    {
-      name: "Rentouttava kasvohoito",
-      description:
-        "Rentouttava ja kosteuttava kasvohoito. (Alkupuhdistuksen, kuorinnan, hieronnan, naamion, hoitovoiteen.)",
-      price: 35,
-    },
-    {
-      name: "Ultraäänipuhdistus",
-      description:
-        "Ultraäänipuhdistus on tehokas ja hellävarainen ihon syväpuhdistus ja kuorinta, joka samalla aktivoi ihon toimintoja.",
-      price: 45,
-    },
-    {
-      name: "Kasvohoito",
-      description:
-        "Alkupuhdistus, kuorinta ja yhdessä kosmetologin kanssa valittavat terapiat. Kesto max 60 min.",
-      price: 40,
-    },
-    {
-      name: "Täydellinen kasvohoito",
-      description:
-        "Alkupuhdistus, kuorinta ja yhdessä kosmetologin kanssa valittavat terapiat. Kesto max 90 min.",
-      price: 60,
-    },
-    {
-      name: "Juhlameikki",
-      description: "Juhlameikki kuvauksia tai illanviettoa varten.",
-      price: 45,
-    },
-    {
-      name: "Päivämeikki",
-      description: "Kevyt meikki päiväkäyttöön.",
-      price: 30,
-    },
-  ],
-  "Ripset/kulmat": [
-    {
-      name: "Ripsien värjäys",
-      description: "Ripsien värjäys kestovärillä.",
-      price: 10,
-    },
-    {
-      name: "Kulmien värjäys ja muotoilu",
-      description: "Kulmien muotoilu ja värjäys kestovärillä.",
-      price: 15,
-    },
-    {
-      name: "Ripsien ja kulmien värjäys ja muotoilu",
-      description:
-        "Ripsien ja kulmien värjäys kestovärillä sekä kulmien muotoilu.",
-      price: 25,
-    },
-    {
-      name: "Kulmien laminointi",
-      description: "Kulmakarvojen laminointi, värjäys & muotoilu",
-      price: 40,
-    },
-    {
-      name: "Kulmien laminointi( organic)",
-      description: `Organic Brow on täysin luonnonmukainen hoitotuote`,
-      price: 35,
-    },
-  ],
-  Hieronta: [
-    {
-      name: "Klassinen hieronta (30 min)",
-      description:
-        "Klassinen hieronta on lihaksia monipuolisesti muokkaavaa ja rentouttavaa hierontaa.",
-      price: 30,
-    },
-    {
-      name: "Klassinen hieronta (45 min)",
-      description:
-        "Klassinen hieronta on lihaksia monipuolisesti muokkaavaa ja rentouttavaa hierontaa.",
-      price: 40,
-    },
-    {
-      name: "Intialainen päähieronta",
-      description:
-        "Intialainen päähieronta. Hoito tehdään hiuspohjalle ja niskan alueelle.",
-      price: 30,
-    },
-  ],
-  Jalkahoidot: [
-    {
-      name: "Jalkahoito",
-      description:
-        "Kylpy, kovettumien poisto, kynsien leikkaus, kynsinauhojen ja ongelmakohtien hoito sekä voide. Sisältää kynsien lakkauksen.",
-      price: 45,
-    },
-    {
-      name: "Spa-jalkahoito",
-      description:
-        "Kylpy, kuorinta, kovettumien poisto, kynsien leikkaus, kynsinauhojen hoito, hieronta sekä voide. Sisältää kynsien lakkauksen.",
-      price: 60,
-    },
-  ],
-};
 
 const ServiceSelector = ({ selectedServices, onToggle }) => {
   const [expandedCategory, setExpandedCategory] = useState(null);
+  const [serviceData, setServiceData] = useState({});
+
+  // Loading data from WordPress REST API
+  useEffect(() => {
+    axios
+      .get(`${window.wpApiSettings.root}wp/v2/service?per_page=100`)
+      .then((res) => {
+        const grouped = {};
+
+        res.data.forEach((item) => {
+          const category = item.acf?.category || "Muut";
+          if (!grouped[category]) grouped[category] = [];
+
+          grouped[category].push({
+            name: item.title.rendered,
+            description: item.acf?.description || "",
+            price: item.acf?.price || 0,
+          });
+        });
+
+        setServiceData(grouped);
+      })
+      .catch((err) => {
+        console.error("Virhe palveluiden hakemisessa:", err);
+      });
+  }, []);
 
   const handleCategoryToggle = (category) => {
     setExpandedCategory((prev) => (prev === category ? null : category));
@@ -122,6 +48,7 @@ const ServiceSelector = ({ selectedServices, onToggle }) => {
       {Object.entries(serviceData).map(([category, services]) => (
         <div key={category} className="service-category">
           <button
+            type="button"
             className="category-button"
             onClick={() => handleCategoryToggle(category)}
           >
