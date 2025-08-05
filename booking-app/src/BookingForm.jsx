@@ -6,6 +6,7 @@ import "./BookingForm.css";
 
 const today = new Date().toISOString().split("T")[0];
 
+// Generate 30-minute time slots from 08:00 to 20:15
 const generateTimeSlots = () => {
   const slots = [];
   const start = 8 * 60;
@@ -41,6 +42,7 @@ function BookingForm() {
   const [showModal, setShowModal] = useState(false);
   const [showThanks, setShowThanks] = useState(false);
 
+  // Validate phone number format
   const validatePhone = (phone) => {
     const cleaned = phone.replace(/\D/g, "");
     const valid =
@@ -58,9 +60,11 @@ function BookingForm() {
     return valid && !test.includes(cleaned);
   };
 
+  // Validate name format
   const validateName = (name) =>
     name.length >= 3 && /^[\p{L}\p{N} ]+$/u.test(name);
 
+  // Check if selected date/time is in the past
   const isPast = (dateStr, slot) => {
     const [start] = slot.split(" - ");
     const [h, m] = start.split(":").map(Number);
@@ -71,16 +75,11 @@ function BookingForm() {
     return new Date(Y, M - 1, D, h, m) < now;
   };
 
-  // loading all occupied slots  from WordPress REST API
+  // Fetch booked time slots from custom REST API
   useEffect(() => {
-    if (!window?.wpApiSettings?.root) return;
-
     axios
-      .get(`${window.wpApiSettings.root}booking/v1/booked`, {
+      .get(`/wp-json/booking/v1/booked`, {
         params: { date: form.date },
-        headers: {
-          "X-WP-Nonce": window.wpApiSettings.nonce,
-        },
       })
       .then((res) => {
         const bookedTimes = res.data || [];
@@ -96,6 +95,7 @@ function BookingForm() {
       });
   }, [form.date]);
 
+  // Update form state on input change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({
@@ -105,19 +105,23 @@ function BookingForm() {
     }));
   };
 
+  // Handle time selection
   const handleTimeSelect = (slot) => {
-    if (!slot.isBooked && !isPast(form.date, slot.time)) {
-      setForm((prev) => ({ ...prev, time: slot.time }));
-    }
+    if (slot.isBooked || isPast(form.date, slot.time)) return;
+
+    setForm((prev) => ({ ...prev, time: slot.time }));
   };
 
+  // Update selected services
   const handleServicesToggle = (selected) =>
     setForm((prev) => ({ ...prev, services: selected }));
 
+  // Form validation
   const validateForm = () => {
     const errs = {};
-    if (!validateName(form.name)) errs.name = "Nimen oltava 3 merkkiä";
-    if (!validatePhone(form.phone)) errs.phone = "Virhe puhelinnumero";
+    if (!validateName(form.name))
+      errs.name = "Nimen oltava vähintään 3 merkkiä";
+    if (!validatePhone(form.phone)) errs.phone = "Virheellinen puhelinnumero";
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       errs.email = "Virheellinen sähköposti";
     if (
@@ -134,13 +138,19 @@ function BookingForm() {
     return Object.keys(errs).length === 0;
   };
 
+  // Submit booking
   const handleSubmit = () => {
+    const isSlotTaken = availableTimes.some(
+      (slot) => slot.time === form.time && slot.isBooked
+    );
+
+    if (isSlotTaken) {
+      alert("Tämä aika on jo varattu. Valitse toinen aika.");
+      return;
+    }
+
     axios
-      .post(`${window.wpApiSettings.root}booking/v1/submit`, form, {
-        headers: {
-          "X-WP-Nonce": window.wpApiSettings.nonce,
-        },
-      })
+      .post("/wp-json/booking/v1/submit", form)
       .then((res) => {
         if (res.data.success) {
           setShowThanks(true);
@@ -156,9 +166,7 @@ function BookingForm() {
           setTimeout(() => setShowThanks(false), 3000);
         }
       })
-      .catch((error) => {
-        console.error("Submission error:", error);
-      });
+      .catch(console.error);
   };
 
   return (
@@ -196,7 +204,7 @@ function BookingForm() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="sahkoposti">Sähköposti *</label>
+            <label htmlFor="sahkoposti">Sähköposti*</label>
             <input
               name="email"
               type="email"
@@ -208,7 +216,7 @@ function BookingForm() {
           </div>
 
           <div className="form-group-service">
-            <label>Valitse palvelut *</label>
+            <label>Valitse palvelut*</label>
             <ServiceSelector
               selectedServices={form.services}
               onToggle={handleServicesToggle}
@@ -218,14 +226,18 @@ function BookingForm() {
             )}
           </div>
 
-          <div className="form-group">
-            <input
-              name="date"
-              type="date"
-              min={today}
-              value={form.date}
-              onChange={handleChange}
-            />
+          <div className="form-group form-group-date">
+            <label htmlFor="date">Valitse päivämäärä</label>
+            <div className="date-wrapper">
+              <input
+                id="date"
+                name="date"
+                type="date"
+                min={today}
+                value={form.date}
+                onChange={handleChange}
+              />
+            </div>
           </div>
 
           <div className="time-grid">
@@ -233,9 +245,9 @@ function BookingForm() {
               <button
                 key={i}
                 type="button"
-                className={`time-slot ${slot.isBooked ? "booked" : ""} ${
-                  form.time === slot.time ? "selected" : ""
-                }`}
+                className={`time-slot ${
+                  slot.isBooked || isPast(form.date, slot.time) ? "booked" : ""
+                } ${form.time === slot.time ? "selected" : ""}`}
                 disabled={slot.isBooked || isPast(form.date, slot.time)}
                 onClick={() => handleTimeSelect(slot)}
               >
@@ -264,6 +276,7 @@ function BookingForm() {
             onCancel={() => setShowModal(false)}
           />
         )}
+
         {showThanks && (
           <div className="toast-success">Kiitos! Aika on varattu.</div>
         )}

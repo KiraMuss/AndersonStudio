@@ -6,7 +6,6 @@ const ServiceSelector = ({ selectedServices, onToggle }) => {
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [serviceData, setServiceData] = useState({});
 
-  // Loading data from WordPress REST API
   useEffect(() => {
     axios
       .get(`${window.wpApiSettings.root}wp/v2/service?per_page=100`)
@@ -14,20 +13,28 @@ const ServiceSelector = ({ selectedServices, onToggle }) => {
         const grouped = {};
 
         res.data.forEach((item) => {
-          const category = item.acf?.category || "Muut";
-          if (!grouped[category]) grouped[category] = [];
+          const group = item.acf?.group;
+          const services = item.acf?.items;
 
-          grouped[category].push({
-            name: item.title.rendered,
-            description: item.acf?.description || "",
-            price: item.acf?.price || 0,
+          if (!group || !Array.isArray(services)) return;
+
+          if (!grouped[group]) grouped[group] = [];
+
+          services.forEach((service) => {
+            if (!service.name) return;
+
+            grouped[group].push({
+              name: service.name,
+              description: service.description || "",
+              price: service.price || 0,
+            });
           });
         });
 
         setServiceData(grouped);
       })
       .catch((err) => {
-        console.error("Virhe palveluiden hakemisessa:", err);
+        console.error("Error loading service:", err);
       });
   }, []);
 
@@ -44,7 +51,7 @@ const ServiceSelector = ({ selectedServices, onToggle }) => {
   };
 
   return (
-    <div className="service-selector">
+    <div className="category-buttons-wrapper">
       {Object.entries(serviceData).map(([category, services]) => (
         <div key={category} className="service-category">
           <button
