@@ -11,7 +11,6 @@ const generateTimeSlots = () => {
   const slots = [];
   const start = 8 * 60;
   const end = 20 * 60 + 15;
-
   for (let minutes = start; minutes + 30 <= end; minutes += 30) {
     const h1 = String(Math.floor(minutes / 60)).padStart(2, "0");
     const m1 = String(minutes % 60).padStart(2, "0");
@@ -38,7 +37,6 @@ function BookingForm() {
   const [availableTimes, setAvailableTimes] = useState(
     workingHours.map((t) => ({ time: t, isBooked: false }))
   );
-
   const [showModal, setShowModal] = useState(false);
   const [showThanks, setShowThanks] = useState(false);
 
@@ -75,12 +73,18 @@ function BookingForm() {
     return new Date(Y, M - 1, D, h, m) < now;
   };
 
-  // Fetch booked time slots from custom REST API
+  // Fetch booked time slots only when a service is selected AND a date is chosen
   useEffect(() => {
+    // Guard: do not fetch if no services selected or date not set
+    if (form.services.length === 0 || !form.date) {
+      // Reset availability to default when services cleared
+      setAvailableTimes(
+        workingHours.map((t) => ({ time: t, isBooked: false }))
+      );
+      return;
+    }
     axios
-      .get(`/wp-json/booking/v1/booked`, {
-        params: { date: form.date },
-      })
+      .get(`/wp-json/booking/v1/booked`, { params: { date: form.date } })
       .then((res) => {
         const bookedTimes = res.data || [];
         setAvailableTimes(
@@ -93,7 +97,7 @@ function BookingForm() {
       .catch((err) => {
         console.error("Error fetching booked slots:", err);
       });
-  }, [form.date]);
+  }, [form.services, form.date]);
 
   // Update form state on input change
   const handleChange = (e) => {
@@ -101,20 +105,28 @@ function BookingForm() {
     setForm((prev) => ({
       ...prev,
       [name]: value,
+      // Reset time when date changes
       time: name === "date" ? "" : prev.time,
     }));
   };
 
   // Handle time selection
   const handleTimeSelect = (slot) => {
-    if (slot.isBooked || isPast(form.date, slot.time)) return;
-
+    if (slot.isBooked || isPast(form.date, slot.time)) return; // safety guard
     setForm((prev) => ({ ...prev, time: slot.time }));
   };
 
-  // Update selected services
-  const handleServicesToggle = (selected) =>
-    setForm((prev) => ({ ...prev, services: selected }));
+  // Update selected services; when services change, reset date/time to force re-selection
+  const handleServicesToggle = (selected) => {
+    setForm((prev) => ({
+      ...prev,
+      services: selected,
+      date: selected.length === 0 ? today : prev.date,
+      time: "",
+    }));
+    // Also clear errors related to general requirement once user selects services
+    setErrors((prev) => ({ ...prev, general: undefined }));
+  };
 
   // Form validation
   const validateForm = () => {
@@ -124,26 +136,30 @@ function BookingForm() {
     if (!validatePhone(form.phone)) errs.phone = "Virheellinen puhelinnumero";
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       errs.email = "Virheellinen sähköposti";
-    if (
-      !form.date ||
-      !form.time ||
-      !form.name ||
-      !form.phone ||
-      form.services.length === 0
-    )
-      errs.general = "Täytä kaikki pakolliset kentät";
-    if (form.time && isPast(form.date, form.time))
-      errs.time = "Valittu aika on mennyt";
+
+    // Require at least one service
+    if (form.services.length === 0) {
+      errs.general = "Valitse vähintään yksi palvelu";
+    }
+
+    // Only require date/time if a service is selected
+    if (form.services.length > 0) {
+      if (!form.date) errs.general = "Valitse päivämäärä";
+      if (!form.time) errs.general = "Valitse kellonaika";
+      if (form.time && isPast(form.date, form.time))
+        errs.time = "Valittu aika on mennyt";
+    }
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
   // Submit booking
   const handleSubmit = () => {
+    // Last-second guard: prevent booking if selected slot is taken
     const isSlotTaken = availableTimes.some(
       (slot) => slot.time === form.time && slot.isBooked
     );
-
     if (isSlotTaken) {
       alert("Tämä aika on jo varattu. Valitse toinen aika.");
       return;
@@ -152,7 +168,7 @@ function BookingForm() {
     axios
       .post("/wp-json/booking/v1/submit", form)
       .then((res) => {
-        if (res.data.success) {
+        if (res.data?.success) {
           setShowThanks(true);
           setShowModal(false);
           setForm({
@@ -164,9 +180,11 @@ function BookingForm() {
             services: [],
           });
           setTimeout(() => setShowThanks(false), 3000);
+        } else {
+          alert("Varaus epäonnistui. Yritä uudelleen.");
         }
       })
-      .catch(console.error);
+      .catch(() => alert("Varaus epäonnistui. Yritä uudelleen."));
   };
 
   return (
@@ -204,7 +222,7 @@ function BookingForm() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="sahkoposti">Sähköposti*</label>
+            <label htmlFor="sahkoposti">Sähköposti *</label>
             <input
               name="email"
               type="email"
@@ -216,46 +234,62 @@ function BookingForm() {
           </div>
 
           <div className="form-group-service">
-            <label>Valitse palvelut*</label>
+            <label>Valitse palvelut *</label>
             <ServiceSelector
               selectedServices={form.services}
               onToggle={handleServicesToggle}
             />
+            {/* Hint before services are selected */}
+            {form.services.length === 0 && (
+              <p className="booking-hint">
+                Valitse ensin palvelu nähdäksesi päivämäärät ja ajat.
+              </p>
+            )}
             {errors.general && (
               <p className="booking-error">{errors.general}</p>
             )}
           </div>
 
-          <div className="form-group form-group-date">
-            <label htmlFor="date">Valitse päivämäärä</label>
-            <div className="date-wrapper">
-              <input
-                id="date"
-                name="date"
-                type="date"
-                min={today}
-                value={form.date}
-                onChange={handleChange}
-              />
+          {/* Date appears only after a service is selected */}
+          {form.services.length > 0 && (
+            <div className="form-group form-group-date">
+              <label htmlFor="date">Valitse päivämäärä</label>
+              <div className="date-wrapper">
+                <input
+                  id="date"
+                  name="date"
+                  type="date"
+                  min={today}
+                  value={form.date}
+                  onChange={handleChange}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="time-grid">
-            {availableTimes.map((slot, i) => (
-              <button
-                key={i}
-                type="button"
-                className={`time-slot ${
-                  slot.isBooked || isPast(form.date, slot.time) ? "booked" : ""
-                } ${form.time === slot.time ? "selected" : ""}`}
-                disabled={slot.isBooked || isPast(form.date, slot.time)}
-                onClick={() => handleTimeSelect(slot)}
-              >
-                {slot.time}
-              </button>
-            ))}
-          </div>
-          {errors.time && <p className="booking-error">{errors.time}</p>}
+          {/* Time grid appears only after both a service and a date are chosen */}
+          {form.services.length > 0 && form.date && (
+            <>
+              <div className="time-grid">
+                {availableTimes.map((slot, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`time-slot ${
+                      slot.isBooked || isPast(form.date, slot.time)
+                        ? "booked"
+                        : ""
+                    } ${form.time === slot.time ? "selected" : ""}`}
+                    disabled={slot.isBooked || isPast(form.date, slot.time)}
+                    onClick={() => handleTimeSelect(slot)}
+                  >
+                    {slot.time}
+                  </button>
+                ))}
+              </div>
+              {errors.time && <p className="booking-error">{errors.time}</p>}
+            </>
+          )}
 
           <button className="booking-button" type="submit">
             Vahvista varaus
